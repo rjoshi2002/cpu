@@ -119,6 +119,17 @@ module core
       end
     end
 
+    //addi
+    if(instr_D[6:0] == 7'b0010011)
+    begin
+      imm_type_D = 1; //this val is for I type instr
+      alu_src_b_D = 1; //enable imm on alu port b
+      if(instr_D[14:12] == 3'b000)
+      begin
+        alu_op_D = 2; //ADD
+      end 
+    end
+
   end
 
   always_comb 
@@ -135,7 +146,8 @@ module core
   always_comb 
   begin : IMM_EXT
     case (imm_type_D)
-      0: imm_ext_D = instr_D[31:12] << 12;
+      0: imm_ext_D = (instr_D[31:12] << 12);
+      1: imm_ext_D = {{20{instr_D[31]}}, instr_D[31:20]};
       default: imm_ext_D = '0;
     endcase
   end
