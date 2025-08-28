@@ -1,4 +1,5 @@
-000092B7 //lui rd(5),imm(9) -> imm[31:12] rd[11:7] opcode[6:0]
+000092B7 //lui rd(5),imm(9) -> imm[31:12] rd[11:7] opcode[6:0] -> writes (0x9 << 12) to r5
+00008317 //auipc rd(6),imm(8) -> imm[31:12] rd[11:7] opcode[6:0] -> writes (0x8 << 12 + pc) to r6
 00000000
 00000000
 00000000

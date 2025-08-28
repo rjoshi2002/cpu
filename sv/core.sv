@@ -85,14 +85,16 @@ module core
   //control signals
   logic [1:0] imm_type_D;
   logic [2:0] alu_op_D;
-  logic alu_src_D;
+  logic alu_src_a_D;
+  logic alu_src_b_D;
   logic reg_write_D;
   logic [1:0] result_src_D;
 
   always_comb 
   begin : CONTROL_UNIT
     imm_type_D = '1; //1 for debug
-    alu_src_D = 0; //default alu port b should not use imm val
+    alu_src_a_D = 0; //default alu port a will be rs1_data
+    alu_src_b_D = 0; //default alu port b should not use imm val
     reg_write_D = 0;
     result_src_D = 0; //default result source is alu result
     alu_op_D = 0; //NOP
@@ -101,12 +103,19 @@ module core
     if(instr_D[4:0] == 5'b10111)
     begin
       imm_type_D = 0; //this val is for U type instr
-      alu_src_D = 1; //enable imm on alu port b
+      alu_src_b_D = 1; //enable imm on alu port b
       reg_write_D = 1; //enable register writeback
       result_src_D = 0;
-      if(instr_D[5])
+      if(instr_D[6:5] == 2'b01)
       begin
+        //lui
         alu_op_D = 1; //COPY_B
+      end
+      else
+      begin
+        //auipc
+        alu_src_a_D = 1; //enable pc on alu port a
+        alu_op_D = 2; //ADD
       end
     end
 
@@ -140,7 +149,8 @@ module core
   logic [31:0] rs1_data_E;
   logic [31:0] rs2_data_E;
   logic [2:0] alu_op_E;
-  logic alu_src_E;
+  logic alu_src_a_E;
+  logic alu_src_b_E;
   logic reg_write_E;
   logic [1:0] result_src_E;
 
@@ -159,7 +169,8 @@ module core
       rs1_data_E <= rs1_data_D;
       rs2_data_E <= rs2_data_D;
       alu_op_E <= alu_op_D;
-      alu_src_E <= alu_src_D;
+      alu_src_a_E <= alu_src_a_D;
+      alu_src_b_E <= alu_src_b_D;
       reg_write_E <= reg_write_D;
       result_src_E <= result_src_D;
     end
@@ -177,10 +188,14 @@ module core
     alu_res_E = '0;  
     alu_port_a_E = rs1_data_E;
     write_data_E = rs2_data_E;
-    
     alu_port_b_E = write_data_E;
+    
     //muxes
-    if(alu_src_E)
+    if(alu_src_a_E)
+    begin
+      alu_port_a_E = pc_E;
+    end
+    if(alu_src_b_E)
     begin
       alu_port_b_E = imm_ext_E;
     end
@@ -189,6 +204,7 @@ module core
     case (alu_op_E)
       0: alu_res_E = '0; //NOP
       1: alu_res_E = alu_port_b_E; //COPY_B
+      2: alu_res_E = alu_port_a_E + alu_port_b_E; //ADD
       default: alu_res_E = '0;
     endcase
   end
@@ -232,6 +248,12 @@ module core
 
   //--------------------
   //WRITEBACK
+  logic [31:0] alu_res_W;
+  logic [31:0] read_data_W;
+  logic [4:0] rd_W;
+  logic [31:0] pcplus4_W;
+  logic reg_write_W;
+  logic [1:0] result_src_W;
 
   always_ff @( posedge clk, posedge rst ) 
   begin : MEMORY_WRITEBACK_PIPE
@@ -241,8 +263,32 @@ module core
     end
     else
     begin
-
+      alu_res_W <= alu_res_M;
+      read_data_W <= read_data_M;
+      rd_W <= rd_M;
+      pcplus4_W <= pcplus4_M;
+      reg_write_W <= reg_write_M;
+      result_src_W <= result_src_M;
     end
+  end
+
+  //writeback result
+  logic [31:0] result_W;
+
+  always_comb 
+  begin : WRITEBACK_MUX
+    case (result_src_W)
+      0: result_W = alu_res_W;
+      1: result_W = read_data_W;
+      2: result_W = pcplus4_W;
+      default: result_W = '0; 
+    endcase
+
+    //write back connections to reg file
+    rd_data = result_W;
+    rd = rd_W;
+    rd_enable = reg_write_W;
+
   end
 
 endmodule
