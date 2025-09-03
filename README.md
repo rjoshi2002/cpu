@@ -6,7 +6,7 @@ Dependencies:
 **verilator**
 **gtkwave**
 
-Testbench Loads CPU with /hex and captures all CPU signals and memory dump
+Testbench Loads CPU mems with /hex and captures all CPU signals + memory dump
 
-Latest Iteration:
+Latest Iteration Architecture Diagram:
 ![Architecture Diagram](./diagrams/cpu.drawio.svg)
