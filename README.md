@@ -3,8 +3,7 @@
 -RISC-V CPU based on RV32i
 
 Dependencies:
-**verilator**
-**gtkwave**
+**verilator and gtkwave**
 
 Testbench Loads CPU mems with /hex and captures all CPU signals + memory dump
 
